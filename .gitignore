@@ -1,0 +1,12 @@
+# Default ignored files
+/shelf/
+# Datasource local storage ignored files
+/dataSources/
+/dataSources.local.xmlt requests
+                      /httpRequests/
+# Editor-based HTTP Clien
+
+*.idea/
+*.iml
+.DS_Store
+/build/webhook

@@ -1,0 +1,63 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elastic-webhook
+  namespace: elastic-tracing-webhook
+  labels:
+    app: elastic-webhook
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: elastic-webhook
+  template:
+    metadata:
+      labels:
+        app: elastic-webhook
+    spec:
+      containers:
+        - name: server
+          image: eyalkoren/tracing-webhook:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8443
+              name: webhook-api
+          volumeMounts:
+            - name: webhook-tls-certs
+              mountPath: /run/secrets/tls
+              readOnly: true
+      volumes:
+        - name: webhook-tls-certs
+          secret:
+            secretName: webhook-server-tls
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elastic-webhook
+  namespace: elastic-tracing-webhook
+spec:
+  selector:
+    app: elastic-webhook
+  ports:
+    - port: 443
+      targetPort: webhook-api
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: elastic-webhook
+webhooks:
+  - name: elastic-webhook.elastic-tracing-webhook.svc
+    clientConfig:
+      service:
+        name: elastic-webhook
+        namespace: elastic-tracing-webhook
+        path: "/trace"
+      caBundle: ${CA_PEM_B64}
+    rules:
+      - operations: [ "CREATE" ]
+        apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["pods"]
